@@ -1,5 +1,7 @@
 #include <QIcon>
 #include <QMessageBox>
+#include <map>
+#include <sstream>
 
 #include <retroshare/rsplugin.h>
 #include <util/rsversion.h>
@@ -83,6 +85,65 @@ QDialog *WebUIPlugin::qt_about_page() const
 WebUIPlugin::WebUIPlugin()
 {
 	mPlugInHandler = NULL;
+}
+
+void WebUIPlugin::setParams(std::string params)
+{
+	std::cerr<<"WebUIPlugin::setParams(\""<<params<<"\")"<<std::endl;
+	const uint8_t NAME  = 0;
+	const uint8_t KEY   = 1;
+	const uint8_t VALUE = 2;
+	uint8_t readingState = NAME;
+	std::string name;
+	std::string key;
+	std::string value;
+	std::map<std::string, std::string> paramMap;
+	
+	// split a string like "namespace:key=value;namespace:key2=value"
+	// key=value pairs in namespace "rswebui" are added to a map
+	for(int i=0; i<params.length(); i++)
+	{
+		char c = params[i];
+		switch(readingState)
+		{
+			case NAME:
+				if(c == ':'){
+					readingState = KEY;
+				}else{
+					name += c;
+				}
+				break;
+			case KEY:
+				if(c == '='){
+					readingState = VALUE;
+				}else{
+					key += c;
+				}
+				break;
+			case VALUE:
+				if(c == ';'){
+					if(name == "rswebui"){
+						paramMap[key] = value;
+					}
+					name  = "";
+					key   = "";
+					value = "";
+					readingState = NAME;
+				}else{
+					value += c;
+				}
+				break;
+		}
+	}
+	
+	std::map<std::string, std::string>::iterator it = paramMap.find(std::string("port"));
+	if(it != paramMap.end()){
+		uint16_t port;
+		std::istringstream ss(it->second);
+		ss >> port;
+		std::cerr << "Setting port of RsWebUI to " << (int)port << std::endl;
+		RSWebUI::setPort(port);
+	}
 }
 
 void WebUIPlugin::setInterfaces(RsPlugInInterfaces &interfaces)

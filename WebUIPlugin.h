@@ -24,6 +24,7 @@ class WebUIPlugin: public RsPlugin
 
 		virtual std::string getShortPluginDescription() const ;
 		virtual std::string getPluginName() const;
+		virtual void setParams(std::string params);
 		virtual void setInterfaces(RsPlugInInterfaces& interfaces);
 		virtual void stop();
 
